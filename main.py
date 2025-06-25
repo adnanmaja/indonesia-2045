@@ -42,26 +42,52 @@ def dataclean(df_raw):
 
 df_melted = dataclean(pd.read_csv(datadir))
 
+# Feature engineering
+def growth(df_melted):
+    df = df_melted.copy()
 
-'''
+    df['PDRB_ADHK_YoY'] = df.groupby('Provinsi')['PDRB_ADHK'].pct_change(fill_method=None) * 100
+    df['PDRB_ADHB_YoY'] = df.groupby('Provinsi')['PDRB_ADHB'].pct_change(fill_method=None) * 100
+    df['PDRBK_ADHK_YoY'] = df.groupby('Provinsi')['PDRBK_ADHK'].pct_change(fill_method=None) * 100
+    df['PDRBK_ADHB_YoY'] = df.groupby('Provinsi')['PDRBK_ADHB'].pct_change(fill_method=None) * 100
 
---- PENGANGGURAN PIPELINE ---
+    pivot_adhk = df.pivot(index='Provinsi', columns='Tahun', values='PDRB_ADHK')
+    pivot_adhb = df.pivot(index='Provinsi', columns='Tahun', values='PDRB_ADHB')
+    pivot_bk_adhk = df.pivot(index='Provinsi', columns='Tahun', values='PDRBK_ADHK')
+    pivot_bk_adhb = df.pivot(index='Provinsi', columns='Tahun', values='PDRBK_ADHB')
 
-'''
+    common_provinces = pivot_adhk.dropna(subset=['2010', '2020']).index
+
+    pct_adhk = ((pivot_adhk.loc[common_provinces, '2020'] - pivot_adhk.loc[common_provinces, '2010']) / pivot_adhk.loc[common_provinces, '2010']) * 100
+    pct_adhb = ((pivot_adhb.loc[common_provinces, '2020'] - pivot_adhb.loc[common_provinces, '2010']) / pivot_adhb.loc[common_provinces, '2010']) * 100
+    pct_bk_adhk = ((pivot_bk_adhk.loc[common_provinces, '2020'] - pivot_bk_adhk.loc[common_provinces, '2010']) / pivot_bk_adhk.loc[common_provinces, '2010']) * 100
+    pct_bk_adhb = ((pivot_bk_adhb.loc[common_provinces, '2020'] - pivot_bk_adhb.loc[common_provinces, '2010']) / pivot_bk_adhb.loc[common_provinces, '2010']) * 100
+
+    df['PDRB_ADHK_Pct'] = df['Provinsi'].map(pct_adhk)
+    df['PDRB_ADHB_Pct'] = df['Provinsi'].map(pct_adhb)
+    df['PDRBK_ADHK_Pct'] = df['Provinsi'].map(pct_bk_adhk)
+    df['PDRBK_ADHB_Pct'] = df['Provinsi'].map(pct_bk_adhb)
+
+    return df
+    
+df_final = growth(df_melted)
+
+
 
 # Getting the data ready for pengangguran
-def pengangguran_setup(df_melted):
-    df_melted = df_melted.dropna(subset=['Inflasi'])
-    df_melted = df_melted.dropna(subset=['Upah Minimum'])
-    X = df_melted[['IPM', 'Inflasi', 'PDRB_ADHB', 'PDRB_ADHK', 'PDRBK_ADHB', 'PDRBK_ADHK', 'Upah Minimum', 'Kemiskinan']]
-    y = df_melted['Pengangguran']
+def pengangguran_setup(df_final):
+    df_final = growth(df_melted)
+    df_final = df_final.dropna()
+    X = df_final[['IPM', 'Inflasi', 'PDRB_ADHB', 'PDRB_ADHK', 'PDRBK_ADHB', 'PDRBK_ADHK', 'Upah Minimum', 'Kemiskinan',
+        'PDRB_ADHK_Pct', 'PDRB_ADHB_Pct', 'PDRB_ADHK_YoY', 'PDRB_ADHB_YoY', 'PDRBK_ADHK_Pct', 'PDRBK_ADHB_Pct', 'PDRBK_ADHK_YoY', 'PDRBK_ADHB_YoY']]
+    y = df_final['Pengangguran']
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     return X_train, X_test, y_train, y_test
 
 # Random Forest on Pengangguran 
 def pengangguran_rf():
-    X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
+    X_train, X_test, y_train, y_test = pengangguran_setup(df_final)
 
     model = RandomForestRegressor(
         n_estimators=200,
@@ -80,7 +106,7 @@ def pengangguran_rf():
 
 # Linear Regression on Pengangguran
 def pengangguran_lr():
-    X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
+    X_train, X_test, y_train, y_test = pengangguran_setup(df_final)
     model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
@@ -89,7 +115,7 @@ def pengangguran_lr():
 
 # Grid Search on Pengangguran
 def pengangguran_grid():
-    X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
+    X_train, X_test, y_train, y_test = pengangguran_setup(df_final)
     param_grid = {
     'n_estimators': [100, 200],
     'max_depth': [5, 10, None],
@@ -105,7 +131,7 @@ def pengangguran_grid():
 
 # XGB Regressor on Pengangguran
 def pengangguran_xgb():
-    X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
+    X_train, X_test, y_train, y_test = pengangguran_setup(df_final)
     model = xgb.XGBRegressor(
         objective="reg:linear",
         n_estimators=300,
@@ -121,7 +147,7 @@ def pengangguran_xgb():
 
 # LGBM Regressor on Pengangguran
 def pengangguran_lgb():
-    X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
+    X_train, X_test, y_train, y_test = pengangguran_setup(df_final)
     model = lgb.LGBMRegressor(
         n_estimators=300,
         max_depth=6,
@@ -140,15 +166,15 @@ def pengangguran_results():
     grid_r2, grid_bestparams = pengangguran_grid() 
     xgb_mse, xgb_r2 = pengangguran_xgb()
     lgb_r2 = pengangguran_lgb()
-    print(f"Random Forest | r2: {rf_r2} | mae: {rf_mae} | rmse: {rf_rmse}")
-    print(f"Grid Search CV| r2: {grid_r2} (best) | params: {grid_bestparams} (best)")
-    print(f"Linear Regression | r2: {lr_r2}")
-    print(f"XGB Regressor | r2: {xgb_r2} | mse: {xgb_mse}")
-    print(f"LGBM Regressor | r2: {lgb_r2}")
+    print(f"Random Forest | r2: {rf_r2} | mae: {rf_mae} | rmse: {rf_rmse}") # r2: 0.6336318071342897
+    print(f"Grid Search CV| r2: {grid_r2} (best) | params: {grid_bestparams} (best)") # r2: 0.5219284767443176
+    print(f"Linear Regression | r2: {lr_r2}") # r2: 0.25050248165268973
+    print(f"XGB Regressor | r2: {xgb_r2} | mse: {xgb_mse}") # r2: 0.6480783510765442
+    print(f"LGBM Regressor | r2: {lgb_r2}") # r2: 0.692252219151042
 
 # Visualizing actual vs predicted results from the LGBM Regression model
 def pengangguran_lgbm_visualization():
-    X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
+    X_train, X_test, y_train, y_test = pengangguran_setup(df_final)
     lgb_r2, y_pred = pengangguran_lgb()
     plt.figure(figsize=(8, 6))
     plt.scatter(y_test, y_pred, alpha=0.7)
@@ -158,46 +184,8 @@ def pengangguran_lgbm_visualization():
     plt.title(f'LGBM: Actual vs Predicted (R² = {lgb_r2:.3f})')
     plt.show()  
 
-
-pengangguran_results()
-
+pengangguran_lgbm_visualization()
 
 
 
-#Kemiskinan pipeline
-def kemiskinan_pipe():
-    X = df_melted[['IPM', 'Inflasi', 'PDRB_ADHB', 'PDRB_ADHK', 'PDRBK_ADHB', 'PDRBK_ADHK', 'Upah Minimum', 'Pengangguran']]
-    y = np.log(df_melted['Kemiskinan'])
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    model = RandomForestRegressor(
-        n_estimators=200,
-        max_depth=20,
-        min_samples_split=5,
-        random_state=42
-    )
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-
-    actual_y_pred = np.exp(y_pred)
-    actual_y_test = np.exp(y_test)
-
-    mae = mean_absolute_error(actual_y_test, actual_y_pred)
-    rmse = np.sqrt(mean_squared_error(actual_y_test, actual_y_pred))
-    r2 = r2_score(actual_y_test, actual_y_pred)
-
-
-    print("MAE:", mae)
-    print("RMSE:", rmse)
-    print("R² Score:", r2)
-
-    print(actual_y_pred)
-
-
-    feature_importance = pd.DataFrame({
-        'feature': X.columns,
-        'importance': model.feature_importances_
-    }).sort_values('importance', ascending=False)
-    print(feature_importance)
 
