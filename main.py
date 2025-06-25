@@ -6,6 +6,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LinearRegression
+import xgboost as xgb
+import lightgbm as lgb
+import matplotlib.pyplot as plt
 
 datadir = "D:/Python/2045/data/2045-sets-v10.csv"
 
@@ -39,6 +42,14 @@ def dataclean(df_raw):
 
 df_melted = dataclean(pd.read_csv(datadir))
 
+
+'''
+
+--- PENGANGGURAN PIPELINE ---
+
+'''
+
+# Getting the data ready for pengangguran
 def pengangguran_setup(df_melted):
     df_melted = df_melted.dropna(subset=['Inflasi'])
     df_melted = df_melted.dropna(subset=['Upah Minimum'])
@@ -48,8 +59,7 @@ def pengangguran_setup(df_melted):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     return X_train, X_test, y_train, y_test
 
-
-# Pengangguran pipeline 
+# Random Forest on Pengangguran 
 def pengangguran_rf():
     X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
 
@@ -68,13 +78,16 @@ def pengangguran_rf():
 
     return rf_mae, rf_rmse, rf_r2
 
+# Linear Regression on Pengangguran
 def pengangguran_lr():
     X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
     model = LinearRegression()
     model.fit(X_train, y_train)
-    lr_r2 = model.score(X_test, y_test)
+    y_pred = model.predict(X_test)
+    lr_r2 = r2_score(y_test, y_pred)
     return lr_r2
 
+# Grid Search on Pengangguran
 def pengangguran_grid():
     X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
     param_grid = {
@@ -82,21 +95,69 @@ def pengangguran_grid():
     'max_depth': [5, 10, None],
     'min_samples_split': [2, 5],
     }
-
     grid = GridSearchCV(RandomForestRegressor(random_state=42), param_grid, cv=3)
     grid.fit(X_train, y_train)
+
     grid_r2 = grid.best_score_
     grid_bestparams = grid.best_params_
 
     return grid_r2, grid_bestparams
 
+# XGB Regressor on Pengangguran
+def pengangguran_xgb():
+    X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
+    model = xgb.XGBRegressor(
+        objective="reg:linear",
+        n_estimators=300,
+        max_depth=6,
+        learning_rate=0.1,
+        random_state=42)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    xgb_mse = mean_squared_error(y_test, y_pred)
+    xgb_r2 = r2_score(y_test, y_pred)
+    return xgb_mse, xgb_r2
+
+# LGBM Regressor on Pengangguran
+def pengangguran_lgb():
+    X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
+    model = lgb.LGBMRegressor(
+        n_estimators=300,
+        max_depth=6,
+        learning_rate=0.1
+    )
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    lgb_r2 = r2_score(y_test, y_pred)
+    return lgb_r2, y_pred
+
+# Comparing results form all the models tested on pengangguran
 def pengangguran_results():
     rf_mae, rf_rmse, rf_r2 = pengangguran_rf()
     lr_r2 = pengangguran_lr()
     grid_r2, grid_bestparams = pengangguran_grid() 
+    xgb_mse, xgb_r2 = pengangguran_xgb()
+    lgb_r2 = pengangguran_lgb()
     print(f"Random Forest | r2: {rf_r2} | mae: {rf_mae} | rmse: {rf_rmse}")
     print(f"Grid Search CV| r2: {grid_r2} (best) | params: {grid_bestparams} (best)")
     print(f"Linear Regression | r2: {lr_r2}")
+    print(f"XGB Regressor | r2: {xgb_r2} | mse: {xgb_mse}")
+    print(f"LGBM Regressor | r2: {lgb_r2}")
+
+# Visualizing actual vs predicted results from the LGBM Regression model
+def pengangguran_lgbm_visualization():
+    X_train, X_test, y_train, y_test = pengangguran_setup(df_melted)
+    lgb_r2, y_pred = pengangguran_lgb()
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y_test, y_pred, alpha=0.7)
+    plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+    plt.xlabel('Actual')
+    plt.ylabel('Predicted')
+    plt.title(f'LGBM: Actual vs Predicted (R² = {lgb_r2:.3f})')
+    plt.show()  
+
 
 pengangguran_results()
 
