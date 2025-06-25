@@ -1,4 +1,4 @@
-# 🇮🇩 Indonesia 2045 - Economic Prediction
+# 🇮🇩 Yogyakarta 2030 - Unemployment Prediction
 
 A beginner-friendly machine learning project that aims to explore how to roughly predict socioeconomal condition using hypothetical scenarios such as 'Optimistic' and 'Stagnant'. This project is designed for educational purposes, helping me get hands-on experience with data science workflows, regression models, and exploratory data analysis (EDA).
 
@@ -8,6 +8,19 @@ A beginner-friendly machine learning project that aims to explore how to roughly
 - Practice basic ML algorithms such as Linear Regression, Decision Trees, or Ensemble methods.
 - Learn how to work with real-world socio-economic data from trusted sources (BPS, World Bank, etc.).
 - Understand feature selection, data preprocessing, and model evaluation in a real context.
+
+## 📈 Predicted Unemployment Rates in Yogyakarta (2026–2030)
+
+| Tahun | Optimis (%) | Stagnan (%) |
+|-------|-------------|-------------|
+| 2026  | 6.08        | 5.45        |
+| 2027  | 6.08        | 5.45        |
+| 2028  | 6.08        | 5.45        |
+| 2029  | 6.08        | 5.97        |
+| 2030  | 6.08        | 5.97        |
+
+> 📌 *Note: These projections are based on simplified assumptions for each scenario. Flat values reflect static feature inputs and are intended to demonstrate model behavior under constrained future conditions.*
+
 
 ## 📊 Features / Parameters Used
 

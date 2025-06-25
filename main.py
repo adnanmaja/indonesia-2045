@@ -216,7 +216,7 @@ def lm_plot():
     sns.lmplot(data=df_final, x='Kemiskinan', y='Pengangguran', hue='Provinsi', scatter_kws={'alpha': 0.6}, 
         palette='tab10', ci=68)
     plt.show()
-lm_plot()
+
 
 def importance():
     X = df_final[['IPM', 'Inflasi', 'PDRB_ADHB', 'PDRB_ADHK', 'PDRBK_ADHB', 'PDRBK_ADHK', 'Upah Minimum', 'Kemiskinan',
@@ -289,3 +289,4 @@ def stagnant_pred():
 def pred_results():
     optimistic_pred()
     stagnant_pred()
+pred_results()
