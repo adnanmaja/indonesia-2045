@@ -185,8 +185,54 @@ def pengangguran_lgbm_visualization():
     plt.title(f'LGBM: Actual vs Predicted (R² = {lgb_r2:.3f})')
     plt.show()  
 
+# Other visulization types
+def corr_heatmap():
+    df = df_final.select_dtypes(include='number')
+    corr_matrix = df.corr()
 
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", square=True)
+    plt.title('Correlation Heatmap of Economic Indicators')
+    plt.tight_layout()
+    plt.show()
 
+def box_plot():
+    sns.boxplot(data=df_final, x='Provinsi', y='Upah Minimum', hue='Provinsi')  
+    plt.title('Perbandingan UMR tiap provinsi')
+    plt.xlabel('Provinsi')
+    plt.ylabel('UMR')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.show()
+
+def violin_plot():
+    sns.violinplot(data=df_final, x='Provinsi', y='IPM') 
+    plt.title('Distribusi IPM tiap provinsi')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.show()
+
+def lm_plot():
+    sns.lmplot(data=df_final, x='Kemiskinan', y='Pengangguran', hue='Provinsi', scatter_kws={'alpha': 0.6}, 
+        palette='tab10', ci=68)
+    plt.show()
+lm_plot()
+
+def importance():
+    X = df_final[['IPM', 'Inflasi', 'PDRB_ADHB', 'PDRB_ADHK', 'PDRBK_ADHB', 'PDRBK_ADHK', 'Upah Minimum', 'Kemiskinan',
+        'PDRB_ADHK_Pct', 'PDRB_ADHB_Pct', 'PDRB_ADHK_YoY', 'PDRB_ADHB_YoY', 'PDRBK_ADHK_Pct', 'PDRBK_ADHB_Pct', 'PDRBK_ADHK_YoY', 'PDRBK_ADHB_YoY']]
+    _, model = pengangguran_lgb()
+    importances = model.feature_importances_
+    features = X.columns
+
+    imp_series = pd.Series(importances, index=features)
+    imp_series = imp_series.sort_values(ascending=True)
+
+    plt.figure(figsize=(12, 6))
+    plt.barh(features, imp_series.values)
+    plt.title("Faktor Paling Berpengaruh Dalam Pengangguran")
+    plt.xlabel("Feature Importance")
+    plt.show()
 
 
 def hypotetical_data():
@@ -243,5 +289,3 @@ def stagnant_pred():
 def pred_results():
     optimistic_pred()
     stagnant_pred()
-
-pred_results()

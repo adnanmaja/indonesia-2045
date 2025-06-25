@@ -1,1 +1,7 @@
 .env
+main.ipynb
+data-pulls.py
+optimistic_template.csv
+Optimistic-edited.csv
+Stagnant-edited.csv
+FINALL.csv
