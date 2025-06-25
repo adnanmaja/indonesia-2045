@@ -151,13 +151,14 @@ def pengangguran_lgb():
     model = lgb.LGBMRegressor(
         n_estimators=300,
         max_depth=6,
-        learning_rate=0.1
+        learning_rate=0.1,
+        verbosity=-1
     )
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
     lgb_r2 = r2_score(y_test, y_pred)
-    return lgb_r2, y_pred
+    return lgb_r2, model
 
 # Comparing results form all the models tested on pengangguran
 def pengangguran_results():
@@ -166,11 +167,11 @@ def pengangguran_results():
     grid_r2, grid_bestparams = pengangguran_grid() 
     xgb_mse, xgb_r2 = pengangguran_xgb()
     lgb_r2 = pengangguran_lgb()
-    print(f"Random Forest | r2: {rf_r2} | mae: {rf_mae} | rmse: {rf_rmse}") # r2: 0.6336318071342897
-    print(f"Grid Search CV| r2: {grid_r2} (best) | params: {grid_bestparams} (best)") # r2: 0.5219284767443176
-    print(f"Linear Regression | r2: {lr_r2}") # r2: 0.25050248165268973
-    print(f"XGB Regressor | r2: {xgb_r2} | mse: {xgb_mse}") # r2: 0.6480783510765442
-    print(f"LGBM Regressor | r2: {lgb_r2}") # r2: 0.692252219151042
+    print(f"Random Forest | r2: {rf_r2} | mae: {rf_mae} | rmse: {rf_rmse}") # r2: 0.7316760837590445
+    print(f"Grid Search CV| r2: {grid_r2} (best) | params: {grid_bestparams} (best)") # r2: 0.6175768683969117
+    print(f"Linear Regression | r2: {lr_r2}") # r2: 0.0004658497515611648
+    print(f"XGB Regressor | r2: {xgb_r2} | mse: {xgb_mse}") # r2: 0.7226360516283026
+    print(f"LGBM Regressor | r2: {lgb_r2}") # r2: 0.7378041160824718
 
 # Visualizing actual vs predicted results from the LGBM Regression model
 def pengangguran_lgbm_visualization():
@@ -184,8 +185,63 @@ def pengangguran_lgbm_visualization():
     plt.title(f'LGBM: Actual vs Predicted (R² = {lgb_r2:.3f})')
     plt.show()  
 
-pengangguran_lgbm_visualization()
 
 
 
 
+def hypotetical_data():
+    optimisticdir = "D:/Python/2045/data/Optimistic-editedv2.csv"
+    stagnantdir = "D:/Python/2045/data/Stagnant-editedv2.csv"
+
+    df_opt = pd.read_csv(optimisticdir)
+    df_stag = pd.read_csv(stagnantdir)
+
+    return df_opt, df_stag
+
+
+def optimistic_pred():
+    optimistic_scenario_data, df_stag = hypotetical_data() 
+    lg_r2, trained_model = pengangguran_lgb()
+
+    tahuns = [2026, 2027, 2028, 2029, 2030]
+    op_pred = {}
+
+    for tahun in tahuns:
+        year_data = optimistic_scenario_data[
+            (optimistic_scenario_data['Tahun'] == tahun) & 
+            (optimistic_scenario_data['Provinsi'] == 'DI Yogyakarta')]
+    
+        features = year_data.drop(['Provinsi', 'Tahun'], axis=1)
+         
+        pred = trained_model.predict(features)
+        op_pred[tahun] = pred[0]
+        print(f"Tahun {tahun} | Optimis: {pred[0]:.2f}%")
+
+    return op_pred
+
+
+def stagnant_pred():
+    df_opt, stagnant_data = hypotetical_data() 
+    lg_r2, trained_model = pengangguran_lgb()
+
+    tahuns = [2026, 2027, 2028, 2029, 2030]
+    st_pred = {}
+
+    for tahun in tahuns :
+        year_data = stagnant_data[
+            (stagnant_data['Tahun'] == tahun) & 
+            (stagnant_data['Provinsi'] == 'DI Yogyakarta')]
+    
+        features = year_data.drop(['Provinsi', 'Tahun'], axis=1)
+        
+        pred = trained_model.predict(features)
+        st_pred[tahun] = pred[0]
+        print(f"Tahun {tahun} | Stagnan: {pred[0]:.2f}%")
+
+    return st_pred
+
+def pred_results():
+    optimistic_pred()
+    stagnant_pred()
+
+pred_results()
