@@ -43,6 +43,8 @@ def dataclean(df_raw):
 df_melted = dataclean(pd.read_csv(datadir))
 
 # Feature engineering
+# Badge gh wkwk
+# bIAR DAPET BAGDE
 def growth(df_melted):
     df = df_melted.copy()
 
